@@ -16,10 +16,15 @@ import { LoginBody, LoginBodyType } from '@/schemaValidations/auth.schema'
 import { useToast } from '@/components/ui/use-toast'
 import authApiRequest from '@/apiRequests/auth'
 import { useRouter } from 'next/navigation'
+import { handleErrorApi } from '@/lib/utils'
+import { useState } from 'react'
 
 const LoginForm = () => {
   const { toast } = useToast()
   const router = useRouter()
+
+  const [loading, setLoading] = useState(false)
+
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
     defaultValues: {
@@ -31,6 +36,8 @@ const LoginForm = () => {
   // 2. Define a submit handler.
   async function onSubmit(values: LoginBodyType) {
     try {
+      if (loading) return
+      setLoading(true)
       const result = await authApiRequest.login(values)
       toast({
         description: result.payload.message
@@ -38,42 +45,29 @@ const LoginForm = () => {
       await authApiRequest.auth({ sessionToken: result.payload.data.token })
       router.push('/me')
     } catch (error: any) {
-      const errors = error.payload.errors as {
-        field: string
-        message: string
-      }[]
-      const status = error.status as number
-      if (status === 422) {
-        errors.forEach((error) => {
-          form.setError(error.field as 'email' | 'password', {
-            type: 'server',
-            message: error.message
-          })
-        })
-      } else {
-        toast({
-          title: 'Lỗi',
-          description: error.payload.message,
-          variant: 'destructive'
-        })
-      }
+      handleErrorApi({
+        error,
+        setError: form.setError
+      })
+    } finally {
+      setLoading(false)
     }
   }
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className='space-y-2 max-w-[600px] flex-shrink-0 w-full'
+        className="space-y-2 max-w-[600px] flex-shrink-0 w-full"
         noValidate
       >
         <FormField
           control={form.control}
-          name='email'
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' type='email' {...field} />
+                <Input placeholder="shadcn" type="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -81,19 +75,19 @@ const LoginForm = () => {
         />
         <FormField
           control={form.control}
-          name='password'
+          name="password"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Mật khẩu</FormLabel>
               <FormControl>
-                <Input placeholder='shadcn' type='password' {...field} />
+                <Input placeholder="shadcn" type="password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type='submit' className='!mt-8 w-full'>
+        <Button type="submit" className="!mt-8 w-full">
           Đăng nhập
         </Button>
       </form>
