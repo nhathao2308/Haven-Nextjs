@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
-import { Roboto } from 'next/font/google'
+import { Inter } from 'next/font/google'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
+import Header from '@/components/header'
+import { Toaster } from '@/components/ui/toaster'
+import AppProvider from '@/app/AppProvider'
+import { cookies } from 'next/headers'
 
-const roboto = Roboto({ subsets: ['vietnamese'], weight: ['100', '300'] })
+const inter = Inter({ subsets: ['vietnamese'] })
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -14,9 +19,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieStore = cookies()
+  const sessionToken = cookieStore.get('sessionToken')
   return (
-    <html lang="en">
-      <body className={roboto.className}>{children}</body>
+    <html lang='en' suppressHydrationWarning>
+      <body className={`${inter.className}`}>
+        <Toaster />
+        <ThemeProvider
+          attribute='class'
+          defaultTheme='system'
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Header />
+          <AppProvider inititalSessionToken={sessionToken?.value}>
+            {children}
+          </AppProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }
